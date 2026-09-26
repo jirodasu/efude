@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2026 jirodasu
+# SPDX-License-Identifier: MPL-2.0
+name: Pyxel Windows Build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - name: Test Pyxel colors and saved frames
+        run: cargo test -p efude-ui pyxel
+      - name: Build Windows application
+        run: cargo build -p efude-app --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: efude-pyxel-windows
+          path: |
+            target/release/efude.exe
+            LICENSE-MPL
+            LICENSE-MIT
+            LICENSE-APACHE
+            NOTICE
+            docs/PYXEL_MODE.md
+          if-no-files-found: error
