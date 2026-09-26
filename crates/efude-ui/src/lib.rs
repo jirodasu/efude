@@ -2919,9 +2919,7 @@ impl EfudeApp {
         if !self.is_pyxel_document() && (cut_event || pressed(command, cut)) {
             self.copy_selection(true);
         }
-        if !self.is_pyxel_document()
-            && (paste_event || chord_paste || pressed(command, paste))
-        {
+        if !self.is_pyxel_document() && (paste_event || chord_paste || pressed(command, paste)) {
             self.paste_clipboard(ctx);
         }
         if pressed(shift, Key::I) {

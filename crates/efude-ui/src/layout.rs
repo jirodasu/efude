@@ -655,10 +655,11 @@ impl EfudeApp {
                         self.text("ツール", "Tool"),
                         tool_name(self.tool, self.language_english)
                     );
-                    if !self.is_pyxel_document() && ui
-                        .button(tool_label)
-                        .on_hover_text(self.text("ツールの設定を表示", "Show tool options"))
-                        .clicked()
+                    if !self.is_pyxel_document()
+                        && ui
+                            .button(tool_label)
+                            .on_hover_text(self.text("ツールの設定を表示", "Show tool options"))
+                            .clicked()
                     {
                         self.show_tool_pane();
                     }
