@@ -1966,6 +1966,7 @@ impl EfudeApp {
         backup: bool,
         ctx: &egui::Context,
     ) -> Result<(), String> {
+        self.validate_pyxel_document()?;
         let document = self.document_snapshot();
         let state_token = self.history.state_token();
         let document_id = self.history.document_id();
@@ -2061,6 +2062,10 @@ impl EfudeApp {
         format: ExportFormat,
         ctx: &egui::Context,
     ) -> Result<(), String> {
+        self.validate_pyxel_document()?;
+        if self.is_pyxel_document() && !matches!(format, ExportFormat::Png) {
+            return Err("Pyxel: PNG 形式で書き出してください".into());
+        }
         if matches!(format, ExportFormat::Psd) && self.doc.layers.len() > 200 {
             return Err(if self.language_english {
                 format!(
@@ -2908,13 +2913,15 @@ impl EfudeApp {
                 Err(error) => error,
             };
         }
-        if copy_event || pressed(command, copy) {
+        if !self.is_pyxel_document() && (copy_event || pressed(command, copy)) {
             self.copy_selection(false);
         }
-        if cut_event || pressed(command, cut) {
+        if !self.is_pyxel_document() && (cut_event || pressed(command, cut)) {
             self.copy_selection(true);
         }
-        if paste_event || chord_paste || pressed(command, paste) {
+        if !self.is_pyxel_document()
+            && (paste_event || chord_paste || pressed(command, paste))
+        {
             self.paste_clipboard(ctx);
         }
         if pressed(shift, Key::I) {
@@ -2926,7 +2933,7 @@ impl EfudeApp {
         if pressed(command, deselect) {
             self.change_selection(|selection, _, _| selection.clear());
         }
-        if pressed(shift, Key::N) {
+        if !self.is_pyxel_document() && pressed(shift, Key::N) {
             self.add_raster_layer();
         } else if pressed(command, Key::N) {
             self.show_new_document = true;
@@ -2934,7 +2941,7 @@ impl EfudeApp {
         if pressed(command, Key::O) {
             self.open_document_dialog(ctx);
         }
-        if pressed(command, Key::J) {
+        if !self.is_pyxel_document() && pressed(command, Key::J) {
             self.duplicate_layer_subtree();
         }
         if pressed(command, Key::W) {
@@ -5195,7 +5202,9 @@ impl EfudeApp {
                     input.consume_key(egui::Modifiers::NONE, egui::Key::Escape),
                 )
             });
-            if delete && self.tool == Tool::VectorEdit {
+            if delete && self.is_pyxel_document() {
+                // The dedicated sprite editor never deletes arbitrary layers.
+            } else if delete && self.tool == Tool::VectorEdit {
                 self.delete_vector_selection();
             } else if delete {
                 self.delete_selected_pixels();
@@ -5449,6 +5458,7 @@ mod filters_ui;
 mod icons;
 mod layout;
 mod panels;
+mod pyxel;
 mod tabs;
 mod vector_edit;
 mod vector_tools;

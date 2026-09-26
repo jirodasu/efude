@@ -111,8 +111,19 @@ impl egui_dock::TabViewer for PaneViewer<'_> {
         let (app, ctx) = (&mut *self.app, self.ctx);
         if *tab == Pane::Canvas {
             app.document_tabs_ui(ui);
-            app.canvas_view(ui, ctx);
-            app.zoom_indicator(ui);
+            if app.is_pyxel_document() {
+                app.pyxel_canvas_ui(ui);
+            } else {
+                app.canvas_view(ui, ctx);
+                app.zoom_indicator(ui);
+            }
+            return;
+        }
+        if app.is_pyxel_document() && *tab != Pane::Color {
+            ui.label(app.text(
+                "Pyxel の編集はキャンバスとカラーパネルで行います",
+                "Edit Pyxel sprites in the canvas and Color panel",
+            ));
             return;
         }
         // Sliders shrink with narrow panels so their values stay in view.
@@ -318,7 +329,7 @@ impl EfudeApp {
     /// Lays out everything: menu bar, tool rail and the workspace.
     pub(crate) fn layout_ui(&mut self, ctx: &egui::Context) {
         self.menu_bar(ctx);
-        if self.show_tools_panel {
+        if self.show_tools_panel && !self.is_pyxel_document() {
             egui::SidePanel::left("tool_rail")
                 .exact_width(RAIL_WIDTH)
                 .resizable(false)
@@ -581,6 +592,10 @@ impl EfudeApp {
                     ui.menu_button(self.text("編集", "Edit"), |ui| {
                         ui.set_min_width(160.0);
                         self.undo_redo_ui(ui, ctx);
+                        if self.is_pyxel_document() {
+                            close_menu_on_click(ui);
+                            return;
+                        }
                         ui.separator();
                         let item = |text: &str, keys: &str| {
                             egui::Button::new(text.to_owned()).shortcut_text(keys.to_owned())
@@ -640,18 +655,20 @@ impl EfudeApp {
                         self.text("ツール", "Tool"),
                         tool_name(self.tool, self.language_english)
                     );
-                    if ui
+                    if !self.is_pyxel_document() && ui
                         .button(tool_label)
                         .on_hover_text(self.text("ツールの設定を表示", "Show tool options"))
                         .clicked()
                     {
                         self.show_tool_pane();
                     }
-                    ui.menu_button(self.text("漫画", "Manga"), |ui| self.comic_menu(ui));
-                    ui.menu_button(self.text("フィルター", "Filter"), |ui| {
-                        ui.set_min_width(240.0);
-                        self.filter_menu(ui, ctx);
-                    });
+                    if !self.is_pyxel_document() {
+                        ui.menu_button(self.text("漫画", "Manga"), |ui| self.comic_menu(ui));
+                        ui.menu_button(self.text("フィルター", "Filter"), |ui| {
+                            ui.set_min_width(240.0);
+                            self.filter_menu(ui, ctx);
+                        });
+                    }
                     ui.menu_button(self.text("表示", "View"), |ui| {
                         ui.set_min_width(200.0);
                         let tools = self.text("ツールバー", "Tool Bar");
@@ -703,12 +720,14 @@ impl EfudeApp {
                         ui.selectable_value(&mut self.language_english, false, "日本語");
                         ui.selectable_value(&mut self.language_english, true, "English");
                     });
-                    let clear = clear_all_button(ui).on_hover_text(self.text(
-                        "レイヤー全削除（元に戻す で戻せます）",
-                        "Delete All Layers (Undo brings them back)",
-                    ));
-                    if clear.clicked() {
-                        self.clear_all_layers();
+                    if !self.is_pyxel_document() {
+                        let clear = clear_all_button(ui).on_hover_text(self.text(
+                            "レイヤー全削除（元に戻す で戻せます）",
+                            "Delete All Layers (Undo brings them back)",
+                        ));
+                        if clear.clicked() {
+                            self.clear_all_layers();
+                        }
                     }
                     // Quick undo/redo, then status on the right.
                     ui.add_space(8.0);

@@ -203,6 +203,10 @@ impl EfudeApp {
     #[allow(unused_variables)]
     pub(crate) fn file_menu_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let english = self.language_english;
+        if ui.button(self.text("新規 Pyxel 32×32", "New Pyxel 32×32")).clicked() {
+            self.new_pyxel_document();
+            ui.close_menu();
+        }
         if ui
             .add(egui::Button::new(self.text("新規…", "New…")).shortcut_text("Ctrl+N"))
             .clicked()
@@ -1314,6 +1318,10 @@ impl EfudeApp {
 
     /// Colour wheel, sliders and palette.
     pub(crate) fn color_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        if self.is_pyxel_document() {
+            self.pyxel_palette_ui(ui);
+            return;
+        }
         let color_before = self.color;
         self.color_ui_contents(ui, ctx);
         // Picking any colour leaves the transparent colour.
